@@ -1,6 +1,6 @@
 # Configuration variables and constants
-GOOGLE_API_KEY = "AIzaSyDYHa1DoKn5eWFNwe2X_KDvd3qovZ6kdFM"
-GROQ_API_KEY = "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"
+GOOGLE_API_KEY = "YOUR API KEY"
+GROQ_API_KEY = "YOUR API KEY"
 
 # Agent prompts
 PLANNER_PROMPT = """
