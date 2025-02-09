@@ -1,0 +1,22 @@
+anthropic
+openai
+pre-commit
+datasets
+tiktoken
+libcst
+llama-index
+jsonlines
+swebench @ git+https://github.com/princeton-nlp/SWE-bench
+langgraph>=0.0.15
+langchain-openai>=0.0.5
+langchain-anthropic>=0.1.1
+langchain-google-genai>=0.0.6
+langchain-core>=0.1.15
+python-dotenv>=1.0.0
+tiktoken
+networkx>=2.5
+tree-sitter>=0.20.0
+pygments>=2.10.0
+tqdm>=4.62.0
+typing-extensions>=4.0.0
+pydantic>=2.5.0
