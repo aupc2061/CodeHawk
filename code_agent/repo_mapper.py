@@ -7,6 +7,8 @@ from pygments.token import Token
 from pygments.lexers import guess_lexer_for_filename
 from grep_ast import TreeContext, filename_to_lang
 from tree_sitter_languages import get_language, get_parser
+from code_agent.tree_context import to_tree
+from code_agent.code_walker import filter_important_files, is_important
 
 import os
 
@@ -245,3 +247,57 @@ def get_ranked_tags(
         ranked_tags.append((fname,))
 
     return ranked_tags
+
+def token_count(text):
+    return len(text.split(" "))
+
+def get_ranked_tags_map_uncached(
+        chat_fnames,
+        other_fnames=None,
+        max_map_tokens=None,
+        mentioned_fnames=None,
+        mentioned_idents=None,
+    ):
+        if not other_fnames:
+            other_fnames = list()
+        if not max_map_tokens:
+            max_map_tokens = max_map_tokens
+        if not mentioned_fnames:
+            mentioned_fnames = set()
+        if not mentioned_idents:
+            mentioned_idents = set()
+
+        spin = Spinner("Updating repo map")
+
+        ranked_tags = get_ranked_tags(
+            chat_fnames,
+            other_fnames,
+            mentioned_fnames,
+            mentioned_idents,
+            progress=spin.step,
+        )
+
+        other_rel_fnames = sorted(set(get_rel_fname(fname) for fname in other_fnames))
+        special_fnames = filter_important_files(other_rel_fnames)
+        ranked_tags_fnames = set(tag[0] for tag in ranked_tags)
+        special_fnames = [fn for fn in special_fnames if fn not in ranked_tags_fnames]
+        special_fnames = [(fn,) for fn in special_fnames]
+
+        ranked_tags = special_fnames + ranked_tags
+
+        spin.step()
+
+        num_tags = len(ranked_tags)
+        lower_bound = 0
+        upper_bound = num_tags
+        best_tree = None
+        best_tree_tokens = 0
+
+        chat_rel_fnames = set(get_rel_fname(fname) for fname in chat_fnames)
+        tree = to_tree(ranked_tags[:num_tags], chat_rel_fnames)
+        num_tokens = token_count(tree)
+
+        if num_tokens > max_map_tokens:
+            print(f"Warning: The generated tree exceeds the max_map_tokens limit by {num_tokens - max_map_tokens} tokens.")
+
+        return tree
