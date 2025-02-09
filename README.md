@@ -46,8 +46,8 @@ CodeHawk implements a multi-agent system using LangGraph's directed graph archit
 │   ├── progress.py
 │   ├── repo_mapper.py
 │   ├── routing.py
-│   └── tools.py
-│   ├── tree_context.py
+│   ├── tools.py
+│   └── tree_context.py
 ├── imports.py
 ├── requirements.txt
 ├── setup.py
