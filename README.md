@@ -39,11 +39,16 @@ CodeHawk implements a multi-agent system using LangGraph's directed graph archit
 ```
 ├── code_agent/
 │   ├── __init__.py
+│   ├── codewalker.py
 │   ├── config.py
 │   ├── core.py
 │   ├── main.py
+│   ├── progress.py
+│   ├── repo_mapper.py
 │   ├── routing.py
 │   └── tools.py
+│   ├── tree_context.py
+├── imports.py
 ├── requirements.txt
 ├── setup.py
 └── README.md
