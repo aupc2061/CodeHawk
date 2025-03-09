@@ -2,8 +2,8 @@ from code_agent.main import run_agent
 
 # Run the code agent with a natural language question/request
 run_agent(
-    question="Analyse the structure of the codebase",
-    model="gemini",  # Currently supports "claude"
+    question="Provide your question",
+    model="model_name",  # Currently supports "claude, gemini, groq"
     temperature=0,
-    workspace_dir=r"D:\Projects\llmpairprog\Agentless\get_repo_structure"   # Lower values for more deterministic responses
+    workspace_dir=r"Your workspace dir"   # Lower values for more deterministic responses
 )
