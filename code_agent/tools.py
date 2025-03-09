@@ -3,122 +3,10 @@ import ast
 from typing import Optional
 from langchain_core.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
+from typing import Dict, Optional
 
 @tool
-def get_docstring(node):
-    """Extract docstring from AST node if it exists."""
-    if (node.body and isinstance(node.body[0], ast.Expr) 
-        and isinstance(node.body[0].value, ast.Str)):
-        return node.body[0].value.s
-    return None
-
-
-@tool
-def get_function_signature(node):
-    """Extract function signature from AST node."""
-    args_list = []
-    
-    for arg in node.args.posonlyargs:
-        args_list.append(arg.arg)
-        
-    for arg in node.args.args:
-        args_list.append(arg.arg)
-        
-    defaults = [None] * (len(node.args.args) - len(node.args.defaults)) + node.args.defaults
-    for arg, default in zip(node.args.args, defaults):
-        if default:
-            try:
-                default_value = ast.literal_eval(default)
-                args_list.append(f"{arg.arg}={default_value}")
-            except:
-                args_list.append(f"{arg.arg}=...")
-
-    if node.args.vararg:
-        args_list.append(f"*{node.args.vararg.arg}")
-
-    for kwarg in node.args.kwonlyargs:
-        args_list.append(kwarg.arg)
-
-    if node.args.kwarg:
-        args_list.append(f"**{node.args.kwarg.arg}")
-        
-    docstring = get_docstring(node)
-    signature = f"{node.name}({', '.join(args_list)})"
-    
-    if docstring:
-        signature += f'\n    """{docstring}"""'
-    
-    return signature
-
-
-@tool
-def parse_python_file(file_path, file_content=None):
-    """Parse a Python file to extract class and function definitions with their line numbers."""
-    if file_content is None:
-        try:
-            with open(file_path, "r", encoding="utf-8") as file:
-                file_content = file.read()
-                parsed_data = ast.parse(file_content)
-        except Exception as e:
-            print(f"Error in file {file_path}: {e}")
-            return [], [], ""
-    else:
-        try:
-            parsed_data = ast.parse(file_content)
-        except Exception as e:
-            print(f"Error in file {file_path}: {e}")
-            return [], [], ""
-
-    class_info = []
-    function_names = []
-    class_methods = set()
-
-    for node in ast.walk(parsed_data):
-        if isinstance(node, ast.ClassDef):
-            methods = []
-            for n in node.body:
-                if isinstance(n, ast.FunctionDef):
-                    methods.append(
-                        {
-                            "name": n.name,
-                            "signature": "def " + get_function_signature(n),
-                            "start_line": n.lineno,
-                            "end_line": n.end_lineno,
-                            "text": "\n".join(file_content.splitlines()[
-                                n.lineno - 1 : n.end_lineno
-                            ]),
-                        }
-                    )
-                    class_methods.add(n.name)
-            class_info.append(
-                {
-                    "name": node.name,
-                    "start_line": node.lineno,
-                    "end_line": node.end_lineno,
-                    "text": "\n".join(file_content.splitlines()[
-                        node.lineno - 1 : node.end_lineno
-                    ]),
-                    "methods": methods
-                }
-            )
-        elif isinstance(node, ast.FunctionDef):
-            if node.name not in class_methods:
-                function_names.append(
-                    {
-                        "name": node.name,
-                        "signature": get_function_signature(node),
-                        "start_line": node.lineno,
-                        "end_line": node.end_lineno,
-                        "text": "\n".join(file_content.splitlines()[
-                            node.lineno - 1 : node.end_lineno
-                        ]),
-                    }
-                )
-
-    return class_info, function_names, file_content.splitlines()
-
-@tool
-def get_class_info(relative_file_path, class_name, structure):
+def get_class_info(relative_file_path: str, class_name: str, structure: Dict) -> Optional[str]:
     """Search for a class by name in the given relative file path and return its details."""
     path_parts = relative_file_path.replace("\\", "/").split("/")  # Split into components
     current_level = structure  # Start traversing from the root of the structure
@@ -132,7 +20,25 @@ def get_class_info(relative_file_path, class_name, structure):
             return clazz['text']
     return None
 
-def format_class_and_function_info(info):
+@tool
+def get_function_info(relative_file_path: str, function_name: str, structure: Dict) -> Optional[str]:
+    """Search for a function or class method by name in the given relative file path and return its details."""
+    path_parts = relative_file_path.replace("\\", "/").split("/")  # Split into components
+    current_level = structure
+    for part in path_parts:
+        if part in current_level:
+            current_level = current_level[part]
+
+    for func in current_level["functions"]:
+        if func["name"] == function_name:
+            return func['text']
+    for clazz in current_level["classes"]:
+        for method in clazz["methods"]:
+            if method["name"] == function_name:
+                return method['text']
+    return None
+
+def format_class_and_function_info(info: Dict) -> str:
     """
     Format the class and function information as a string representation of the file content.
     
@@ -153,29 +59,28 @@ def format_class_and_function_info(info):
         result.append("\n")
         for func in info['functions']:
             result.append(f"def {func['name']}{func['signature'][func['signature'].find('('):]} (Lines {func['start_line']}-{func['end_line']}) :")
-            # result.append("\n")
     return "\n".join(result)
 
-
-def get_function_info(relative_file_path, function_name, structure):
-    """Search for a function or class method by name in the given relative file path and return its details."""
+@tool
+def get_class_and_function_info(relative_file_path: str, structure: Dict) -> Optional[str]:
+    """
+    Retrieves class and function info from the repo map for a given relative file path.
+    
+    :param relative_file_path: str, The relative file path to look up in the structure
+    :param structure: dict, The repository structure dictionary
+    :return: dict, Information about the file's classes and functions, or None if not found
+    """
     path_parts = relative_file_path.replace("\\", "/").split("/")  # Split into components
     current_level = structure
+
+    # Traverse the structure using the normalized path
     for part in path_parts:
         if part in current_level:
             current_level = current_level[part]
+        else:
+            return None  # Return None if any part is not found
 
-    for func in current_level["functions"]:
-        if func["name"] == function_name:
-            return func['text']
-    for clazz in current_level["classes"]:
-        for method in clazz["methods"]:
-            if method["name"] == function_name:
-                return method['text']
-    return None
-
-import subprocess
-import os
+    return format_class_and_function_info(current_level)  # Return the final value if traversal is successful
 
 @tool
 def get_repo_tree(repo_path: str = None) -> str:
@@ -220,16 +125,26 @@ from typing import Optional
 @tool
 def open_file(relative_file_path: str, line_number: Optional[int] = None) -> None:
     """Opens the file at the given path in the editor with each line prefixed by its line number."""
-    print(f"Opening file: {relative_file_path}")
-    root_file_path = os.path.abspath(relative_file_path)
     try:
-        with open(root_file_path, "r") as file:
+        # First try as absolute path
+        if os.path.isabs(relative_file_path):
+            file_path = relative_file_path
+        else:
+            # Try relative to current directory
+            file_path = os.path.abspath(relative_file_path)
+            if not os.path.exists(file_path):
+                # Try relative to workspace root if exists
+                workspace = os.getenv("WORKSPACE_ROOT", os.getcwd())
+                file_path = os.path.join(workspace, relative_file_path)
+
+        print(f"Opening file: {relative_file_path}")
+        with open(file_path, "r", encoding="utf-8") as file:
             lines_with_numbers = [
                 f"{line_no:2d}: {line.rstrip()}" for line_no, line in enumerate(file, start=1)
             ]
         return "\n".join(lines_with_numbers)
     except FileNotFoundError:
-        return f"Error: The file at {root_file_path} was not found."
+        return f"Error: The file at {file_path} was not found."
     except Exception as e:
         return f"An error occurred: {e}"
 
@@ -372,21 +287,31 @@ def search_dir(search_term: str, dir_path: str = './') -> None:
 
 @tool
 def search_file(search_term: str, file_path: Optional[str] = None) -> None:
-    """Searches for `search_term` in a specific file or current open file."""
+    """Searches for `search_term` in a specific file."""
     if not file_path:
-        file_path = "current_open_file.txt"  # Replace with actual open file handling
-    """
-    if not os.path.exists(file_path):
-        print(f"Error: File '{file_path}' not found.")
-        return
-    """
-    with open(file_path, 'r', errors='ignore') as file:
-        content = file.read()
+        return "Error: No file path provided"
     
-    if search_term in content:
-        print(f"Found '{search_term}' in {file_path}")
-    else:
-        print(f"'{search_term}' not found in {file_path}")
+    try:
+        # Handle file path similarly to open_file
+        if os.path.isabs(file_path):
+            abs_path = file_path
+        else:
+            abs_path = os.path.abspath(file_path)
+            if not os.path.exists(abs_path):
+                workspace = os.getenv("WORKSPACE_ROOT", os.getcwd())
+                abs_path = os.path.join(workspace, file_path)
+        
+        with open(abs_path, "r", encoding="utf-8", errors="ignore") as file:
+            content = file.read()
+        
+        if search_term in content:
+            print(f"Found '{search_term}' in {file_path}")
+        else:
+            print(f"'{search_term}' not found in {file_path}")
+    except FileNotFoundError:
+        print(f"Error: File '{file_path}' not found")
+    except Exception as e:
+        print(f"Error reading file: {e}")
 
 @tool
 def find_file(file_name: str, dir_path: str = './') -> None:
@@ -415,14 +340,13 @@ def list_files(dir_path: str = './') -> None:
         print(f"Error: Directory '{dir_path}' not found.")
 
 @tool
-def get_relevant_files(problem_statement : str, repo_path : str = None):
+def get_relevant_files(problem_statement: str, repo_path: str = None) -> str:
     """
     Retrieves a list of relevant files to edit based on the problem statement and repository structure.
     :param problem_statement: str, The GitHub problem description.
     :param repo_path: str, The path to the repository. If None, the current working directory is used.
     :return: str, The list of relevant files.
     """
-
     obtain_relevant_files_prompt = """
     Please look through the following GitHub problem description and Repository structure and provide a list of files that one would need to edit to fix the problem.
 
@@ -446,21 +370,7 @@ def get_relevant_files(problem_statement : str, repo_path : str = None):
     """
 
     repo_path = repo_path or os.getcwd()
-    git_root = subprocess.run(
-        ["git", "-C", repo_path, "rev-parse", "--show-toplevel"],
-        capture_output=True,
-        text=True,
-        check=True
-    ).stdout.strip()
-
-    # Get the repo tree
-    result = subprocess.run(
-        ["git", "-C", git_root, "ls-tree", "-r", "HEAD", "--name-only"],
-        capture_output=True,
-        text=True,
-        check=True
-    )
-    structure =  result.stdout.strip()
+    structure = get_repo_tree(repo_path)
     prompt = obtain_relevant_files_prompt.format(problem_statement=problem_statement, structure=structure)
     message = [
         ("human", prompt)
@@ -468,4 +378,3 @@ def get_relevant_files(problem_statement : str, repo_path : str = None):
     llm1 = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0)
     response = llm1.invoke(input=message)
     return response.content
-    

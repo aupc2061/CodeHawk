@@ -56,13 +56,38 @@ CodeHawk implements a multi-agent system using LangGraph's directed graph archit
 
 ## Installation
 
+1. Clone the repository:
 ```bash
+git clone https://github.com/yourusername/CodeHawk.git
+cd CodeHawk
+```
+
+2. Create and activate a virtual environment:
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Unix/macOS
+python -m venv venv
+source venv/bin/activate
+```
+
+3. Install dependencies:
+```bash
+# Install base requirements
+pip install -r requirements.txt
+
+# Install the package in editable mode
 pip install -e .
 ```
 
-Requirements:
-- Python 3.10 or higher
-- Dependencies listed in requirements.txt
+4. Set up environment variables:
+Create a `.env` file in the root directory with your API keys:
+```
+GOOGLE_API_KEY=your_google_api_key
+GROQ_API_KEY=your_groq_api_key
+```
 
 ## Usage
 

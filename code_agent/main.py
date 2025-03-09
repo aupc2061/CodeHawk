@@ -5,131 +5,25 @@ from langchain_anthropic import ChatAnthropic
 from langgraph.graph import StateGraph
 from code_agent.config import GOOGLE_API_KEY, GROQ_API_KEY
 from code_agent.core import (
-    AgentState, create_agent, create_agent_node, 
+    create_agent, create_agent_node, 
     feedback as user_feedback, route_feedback
 )
 from code_agent.routing import (
     router, code_analyzer_router, code_editor_router
 )
 from code_agent.tools import *
+from code_agent.structure import create_structure
+from IPython.display import Image, display
+
 from code_agent.config import (
     PLANNER_PROMPT, EDITING_AGENT_PROMPT, CODE_ANALYZER_PROMPT
 )
 
-def create_structure(directory_path):
-    """Create the structure of the repository directory by parsing Python files.
-    :param directory_path: Path to the repository directory.
-    :return: A dictionary representing the structure.
-    """
-    structure = {}
+class AgentState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+    sender: str
 
-    for root, _, files in os.walk(directory_path):
-        repo_name = os.path.basename(directory_path)
-        # print("repo name", repo_name)
-        relative_root = os.path.relpath(root, directory_path)
-        if relative_root == ".":
-            relative_root = repo_name
-        curr_struct = structure
-        for part in relative_root.split(os.sep):
-            if part not in curr_struct:
-                curr_struct[part] = {}
-            curr_struct = curr_struct[part]
-        for file_name in files:
-            if file_name.endswith(".py"):
-                file_path = os.path.join(root, file_name)
-                class_info, function_names, file_lines = parse_python_file(file_path)
-                curr_struct[file_name] = {
-                    "classes": class_info,
-                    "functions": function_names,
-                    "text": file_lines,
-                }
-            else:
-                curr_struct[file_name] = {}
-
-    return structure
-
-structure = create_structure(os.getcwd())
-
-@tool
-def get_class_info(relative_file_path, class_name):
-    """Search for a class by name in the given relative file path and return its details."""
-    path_parts = relative_file_path.replace("\\", "/").split("/")  # Split into components
-    current_level = structure  # Start traversing from the root of the structure
-    # Traverse the structure using the normalized path
-    for part in path_parts:
-        if part in current_level:
-            current_level = current_level[part]
-
-    for clazz in current_level["classes"]:
-        if clazz["name"] == class_name:
-            return clazz['text']
-    return None
-
-@tool
-def get_function_info(relative_file_path, function_name):
-    """Search for a function or class method by name in the given relative file path and return its details."""
-    path_parts = relative_file_path.replace("\\", "/").split("/")  # Split into components
-    current_level = structure
-    for part in path_parts:
-        if part in current_level:
-            current_level = current_level[part]
-
-    for func in current_level["functions"]:
-        if func["name"] == function_name:
-            return func['text']
-    for clazz in current_level["classes"]:
-        for method in clazz["methods"]:
-            if method["name"] == function_name:
-                return method['text']
-    return None
-
-def format_class_and_function_info(info):
-    """
-    Format the class and function information as a string representation of the file content.
-    
-    :param info: dict, The dictionary containing class and function information for a file
-    :return: str, Formatted string representation of the class and function structure with line numbers
-    """
-    result = []
-
-    # Format classes
-    if 'classes' in info:
-        for cls in info['classes']:
-            result.append(f"class {cls['name']} (Lines {cls['start_line']}-{cls['end_line']}):")
-            for method in cls.get('methods', []):
-                result.append(f"    {method['signature']} (Lines {method['start_line']}-{method['end_line']}):")
-
-    # Format functions
-    if 'functions' in info:
-        result.append("\n")
-        for func in info['functions']:
-            result.append(f"def {func['name']}{func['signature'][func['signature'].find('('):]} (Lines {func['start_line']}-{func['end_line']}) :")
-            # result.append("\n")
-    return "\n".join(result)
-
-@tool
-def get_class_and_function_info(relative_file_path : str):
-    """
-    Retrieves class and function info from the repo map for a given relative file path.
-    
-    :param relative_file_path: str, The relative file path to look up in the structure
-    :return: dict, Information about the file's classes and functions, or None if not found
-    """
-    path_parts = relative_file_path.replace("\\", "/").split("/")  # Split into components
-
-    current_level = structure
-
-    # Traverse the structure using the normalized path
-    for part in path_parts:
-        if part in current_level:
-            current_level = current_level[part]
-        else:
-            return None  # Return None if any part is not found
-
-    return format_class_and_function_info(current_level)  # Return the final value if traversal is successful
-
-
-def build_agent_graph(model: str = "claude", temperature: float = 0):
+def build_agent_graph(model: str = "claude", temperature: float = 0, structure: dict = None):
     """Build and return the agent graph with specified model"""
     
     # Initialize the LLM
@@ -138,10 +32,14 @@ def build_agent_graph(model: str = "claude", temperature: float = 0):
             model='claude-3-sonnet-20240229',
             temperature=temperature
         )
+    elif model == "gemini":
+        llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-001", temperature=0)
+    elif model == 'groq':
+        llm = ChatOpenAI(model='llama3-70b-8192',  base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY, temperature=temperature)
     else:
         raise ValueError(f"Unsupported model: {model}")
 
-    # Create tool nodes
+    # Create tool nodes with bound structure
     planner_tools = [get_repo_tree]  
     editor_tools = [get_repo_tree, list_files, open_file, edit_file, find_file, search_file, create_file, search_dir]
     analysis_tools = [get_class_and_function_info, get_repo_tree, get_relevant_files, open_file, get_class_info, get_function_info]
@@ -173,7 +71,7 @@ def build_agent_graph(model: str = "claude", temperature: float = 0):
     graph_builder.add_node("code_analysis_tool", analysis_tool_node)
 
     # Add edges
-    graph_builder.add_edge("START", "planner")
+    graph_builder.add_edge(START, "planner")
 
     # Add conditional edges
     graph_builder.add_conditional_edges(
@@ -240,11 +138,33 @@ def run_agent(
     question: str,
     model: str = "claude",
     temperature: float = 0,
-    log_file: Optional[str] = None
+    log_file: Optional[str] = None,
+    workspace_dir: Optional[str] = None
 ):
-    """Run the code agent on a given question"""
+    """Run the code agent on a given question
     
-    graph = build_agent_graph(model, temperature)
+    Args:
+        question: The question or task for the agent
+        model: LLM model to use ("claude", "gemini", or "groq")
+        temperature: Temperature parameter for the LLM
+        log_file: Optional path to log file
+        workspace_dir: Optional path to workspace directory. Defaults to current directory
+    """
+    
+    # Use provided workspace dir or current directory
+    workspace_dir = workspace_dir or os.getcwd()
+    
+    # Create structure for the workspace directory
+    structure = create_structure(workspace_dir)
+    
+    # Build graph with structure
+    graph = build_agent_graph(model, temperature, structure)
+
+    try:
+        display(Image(graph.get_graph(xray=True).draw_mermaid_png()))
+    except Exception:
+        # This requires some extra dependencies and is optional
+        pass
     
     # Initialize state
     state = {
