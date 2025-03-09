@@ -85,8 +85,10 @@ pip install -e .
 4. Set up environment variables:
 Create a `.env` file in the root directory with your API keys:
 ```
+ANTHROPIC_API_KEY=your_anthropic_api_key
 GOOGLE_API_KEY=your_google_api_key
 GROQ_API_KEY=your_groq_api_key
+
 ```
 
 ## Usage
