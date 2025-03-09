@@ -59,7 +59,7 @@ CodeHawk implements a multi-agent system using LangGraph's directed graph archit
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/CodeHawk.git
+git clone https://github.com/aupc2061/CodeHawk
 cd CodeHawk
 ```
 
