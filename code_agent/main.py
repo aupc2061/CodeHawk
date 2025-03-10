@@ -37,7 +37,7 @@ def build_agent_graph(model: str = "claude", temperature: float = 0, structure: 
         )
     elif model == "gemini":
         llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-001", temperature=0)
-    elif model == 'groq':
+    elif model == 'llama':
         llm = ChatOpenAI(model='llama3-70b-8192',  base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY, temperature=temperature)
     else:
         raise ValueError(f"Unsupported model: {model}")
@@ -182,9 +182,9 @@ def run_agent(
             with open(log_file, 'a') as f:
                 f.write(f"{step}\n---\n")
         for key, value in step.items():
-            if key in COLORS:  
+            if key in COLORS:  # Check if the key is in the color mapping
                 if isinstance(value, dict) and "messages" in value:
                     for message in value["messages"]:
                         if isinstance(message, AIMessage):
-                            content = message.content  
+                            content = message.content  # Extract only the message text
                             console.print(f"\n[{key.upper()}]: {content}\n", style=COLORS[key])
