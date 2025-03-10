@@ -65,7 +65,7 @@ def main():
         model_table.add_row("📝 Claude", "Anthropic’s model for structured responses")
 
         console.print(model_table)
-        args.model = Prompt.ask("[bold cyan]🎯 Enter model name (Claude, Gemini, LLaMA)[/]", default="gemini")
+        args.model = Prompt.ask("[bold cyan]🎯 Enter model name (claude, gemini, llama)[/]", default="gemini")
 
     # Display confirmation
     console.print("\n[bold green]🚀 Running GitHub Code Agent...[/]")
