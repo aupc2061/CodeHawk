@@ -6,6 +6,7 @@ from rich.panel import Panel
 from rich.align import Align
 from rich.console import Console
 from rich.table import Table
+import os
 
 console = Console()
 
@@ -42,6 +43,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run the GitHub Code Agent with a natural language request.")
     parser.add_argument("-q", "--question", type=str, help="The natural language request for the agent")
     parser.add_argument("-m", "--model", type=str, help="The model to use (Claude, Gemini, or LLaMA)")  
+    parser.add_argument("-w", "--workspace", type=str, help="The workspace directory to analyze (defaults to current working directory)", default=os.getcwd())
 
     # Parse arguments
     args = parser.parse_args()
@@ -51,6 +53,13 @@ def main():
         console.print("\n[bold yellow]💡 What do you need help with?[/]")
         console.print("[bold white]Example: 'Fix a bug in my script' or 'Generate unit tests for my function'[/]\n")
         args.question = Prompt.ask("[bold cyan]🔎 Enter your request[/]")
+
+    # Workspace directory selection
+    if args.workspace == os.getcwd():
+        console.print("\n[bold yellow]📂 Workspace Directory:[/]")
+        console.print("[bold white]Current working directory:[/] " + os.getcwd())
+        if Prompt.ask("[bold cyan]Would you like to specify a different workspace directory?[/]", choices=["yes", "no"], default="no") == "yes":
+            args.workspace = Prompt.ask("[bold cyan]Enter the workspace directory path[/]")
 
     # Model selection with interactive table
     if not args.model:
@@ -73,7 +82,7 @@ def main():
     console.print(f"[bold yellow]🤖 Model:[/] [bold white]{args.model}[/]\n")
 
     # Run the agent with provided input
-    run_agent(question=args.question, model=args.model, temperature=0)
+    run_agent(question=args.question, model=args.model, temperature=0, workspace_dir=args.workspace)
 
 if __name__ == "__main__":
     main()
