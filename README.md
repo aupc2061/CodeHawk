@@ -94,15 +94,12 @@ GROQ_API_KEY=your_groq_api_key
 
 ## Usage
 
-```python
-from code_agent.main import run_agent
+```bash
+# Windows
+python test.py
 
-# Run the code agent with a natural language question/request
-run_agent(
-    question="Please analyze the structure of this codebase",
-    model="claude",  # Currently supports "claude"
-    temperature=0    # Lower values for more deterministic responses
-)
+# Unix/macOS
+python3 test.py
 ```
 
 ## Tools
