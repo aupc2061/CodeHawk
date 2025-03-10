@@ -1,4 +1,7 @@
 import os
+from time import sleep
+from rich.console import Console
+from rich.text import Text
 from typing import Optional
 from imports import *
 from langchain_anthropic import ChatAnthropic
@@ -133,6 +136,14 @@ def build_agent_graph(model: str = "claude", temperature: float = 0, structure: 
 
     return graph_builder.compile()
 
+console = Console()
+COLORS = {
+    "planner": "bold cyan",
+    "code_editor": "bold green",
+    "code_analysis": "bold magenta",
+    "HIL": "bold yellow"
+}
+
 
 def run_agent(
     question: str,
@@ -159,27 +170,21 @@ def run_agent(
     
     # Build graph with structure
     graph = build_agent_graph(model, temperature, structure)
-
-    try:
-        display(Image(graph.get_graph(xray=True).draw_mermaid_png()))
-    except Exception:
-        # This requires some extra dependencies and is optional
-        pass
     
     # Initialize state
     state = {
         "messages": [HumanMessage(content=question)],
         "sender": "user"
     }
-    
-    # Stream results
+
     for step in graph.stream(state):
         if log_file:
             with open(log_file, 'a') as f:
                 f.write(f"{step}\n---\n")
-        
         for key, value in step.items():
-            print(f"Output from node '{key}':")
-            print("---")
-            print(value)
-            print("\n---\n")
+            if key in COLORS:  
+                if isinstance(value, dict) and "messages" in value:
+                    for message in value["messages"]:
+                        if isinstance(message, AIMessage):
+                            content = message.content  
+                            console.print(f"\n[{key.upper()}]: {content}\n", style=COLORS[key])
