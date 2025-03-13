@@ -190,17 +190,21 @@ def run_agent(
             if log_file:
                 with open(log_file, 'a') as f:
                     f.write(f"{step}\n---\n")
+
             for key, value in step.items():
-                # if key in COLORS:  # Check if the key is in the color mapping
-                #     if isinstance(value, dict) and "messages" in value:
-                #         for message in value["messages"]:
-                #             if isinstance(message, AIMessage):
-                #                 content = message.content  # Extract only the message text
-                #                 console.print(f"\n[{key.upper()}]: {content}\n", style=COLORS[key])
-                pprint.pprint(f"Output from node '{key}':")
-                pprint.pprint("---")
-                pprint.pprint(value, indent=2, width=80, depth=None)
-            pprint.pprint("\n---\n")
+                if key in COLORS:  # Check if the key is in the color mapping
+                    if isinstance(value, dict) and "messages" in value:
+                        for message in value["messages"]:
+                            if isinstance(message, AIMessage):
+                                content = message.content  # Extract only the message text
+                                console.print(f"\n[{key.upper()}]: {content}\n", style=COLORS[key])
+                            elif isinstance(message, ToolMessage):
+                                tool_name = message.name  # Extract the tool name
+                                console.print(f"\n[{key.upper()} - TOOL USED]: [bold]{tool_name}[/bold]\n", style=COLORS[key])
+              #  pprint.pprint(f"Output from node '{key}':")
+              #  pprint.pprint("---")
+              #  pprint.pprint(value, indent=2, width=80, depth=None)
+        #    pprint.pprint("\n---\n")
     finally:
         # Restore original working directory
         os.chdir(original_cwd)
