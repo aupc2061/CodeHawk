@@ -3,6 +3,7 @@ import os
 # Configuration variables and constants
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "YOUR API KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "YOUR API KEY")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "YOUR API KEY")
 
 # Agent prompts
 PLANNER_PROMPT = """
