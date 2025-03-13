@@ -52,7 +52,11 @@ CodeHawk implements a multi-agent system using LangGraph's directed graph archit
 ├── imports.py
 ├── requirements.txt
 ├── setup.py
+├── repotest.ipynb
+├── agent.ipynb
+├── test.py
 └── README.md
+
 ```
 
 ## Installation
