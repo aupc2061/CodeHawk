@@ -96,6 +96,8 @@ GROQ_API_KEY=your_groq_api_key
 
 ```
 
+5. Go to `<your directory address>\CodeHawk\code_agent\__init__.py` and add `dotenv_path = Path('<your directory address for .env file>.env')`
+
 ## Usage
 Create a test.bat file with following content in your root directory:
 ```bash
