@@ -6,7 +6,7 @@ from typing import Optional
 from imports import *
 from langchain_anthropic import ChatAnthropic
 from langgraph.graph import StateGraph
-from code_agent.config import GOOGLE_API_KEY, GROQ_API_KEY
+from code_agent.config import GOOGLE_API_KEY, GROQ_API_KEY, ANTHROPIC_API_KEY
 from code_agent.core import (
     create_agent, create_agent_node, 
     feedback as user_feedback, route_feedback
@@ -34,10 +34,11 @@ def build_agent_graph(model: str = "claude", temperature: float = 0):
     if model == "claude":
         llm = ChatAnthropic(
             model='claude-3-sonnet-20240229',
-            temperature=temperature
+            temperature=temperature,
+            api_key=ANTHROPIC_API_KEY
         )
     elif model == "gemini":
-        llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-001", temperature=0)
+        llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-001", temperature=0, api_key=GOOGLE_API_KEY)
     elif model == 'llama':
         llm = ChatOpenAI(model='llama3-70b-8192',  base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY, temperature=temperature)
     else:

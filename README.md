@@ -52,7 +52,11 @@ CodeHawk implements a multi-agent system using LangGraph's directed graph archit
 ├── imports.py
 ├── requirements.txt
 ├── setup.py
+├── repotest.ipynb
+├── agent.ipynb
+├── test.py
 └── README.md
+
 ```
 
 ## Installation
@@ -92,7 +96,25 @@ GROQ_API_KEY=your_groq_api_key
 
 ```
 
+5. Go to `<your directory address>\CodeHawk\code_agent\__init__.py`
+   <br>
+   Add `dotenv_path = Path('<your directory address for .env file>.env')`
+
 ## Usage
+Create a test.bat file with following content in your root directory:
+```bash
+@echo off
+call <your directory address>\<your virtual environment name>\Scripts\activate.bat
+python <your directory address>\test.py
+call <your directory address>\<your virtual environment name>\deactivate.bat
+```
+
+Now do the following:
+- Press Win + R, type sysdm.cpl, and hit Enter.
+- Go to the Advanced tab → Click Environment Variables.
+- Under System Variables, find Path, click Edit, and Add <your directory address>
+- Click OK and restart Command Prompt.
+- Now just go to cmd and type `test` to run the script from anywhere on your system
 
 ```bash
 # Windows
