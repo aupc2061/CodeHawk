@@ -110,7 +110,7 @@ Now do the following:
 - Go to the Advanced tab → Click Environment Variables.
 - Under System Variables, find Path, click Edit, and Add <your directory address>
 - Click OK and restart Command Prompt.
-Now just go to cmd and type `test` to run the script from anywhere on your system
+- Now just go to cmd and type `test` to run the script from anywhere on your system
 
 ```bash
 # Windows
