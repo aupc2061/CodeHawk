@@ -4,12 +4,18 @@ from typing import Optional
 from langchain_core.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from typing import Dict, Optional
+from .shared_context import get_structure
 
 @tool
-def get_class_info(relative_file_path: str, class_name: str, structure: Dict) -> Optional[str]:
+def get_class_info(relative_file_path: str, class_name: str) -> Optional[str]:
     """Search for a class by name in the given relative file path and return its details."""
+    structure = get_structure()
+    if not structure:
+        return "Error: Repository structure not initialized"
+        
     path_parts = relative_file_path.replace("\\", "/").split("/")  # Split into components
     current_level = structure  # Start traversing from the root of the structure
+    
     # Traverse the structure using the normalized path
     for part in path_parts:
         if part in current_level:
@@ -21,8 +27,12 @@ def get_class_info(relative_file_path: str, class_name: str, structure: Dict) ->
     return None
 
 @tool
-def get_function_info(relative_file_path: str, function_name: str, structure: Dict) -> Optional[str]:
+def get_function_info(relative_file_path: str, function_name: str) -> Optional[str]:
     """Search for a function or class method by name in the given relative file path and return its details."""
+    structure = get_structure()
+    if not structure:
+        return "Error: Repository structure not initialized"
+        
     path_parts = relative_file_path.replace("\\", "/").split("/")  # Split into components
     current_level = structure
     for part in path_parts:
@@ -62,14 +72,17 @@ def format_class_and_function_info(info: Dict) -> str:
     return "\n".join(result)
 
 @tool
-def get_class_and_function_info(relative_file_path: str, structure: Dict) -> Optional[str]:
+def get_class_and_function_info(relative_file_path: str) -> Optional[str]:
     """
     Retrieves class and function info from the repo map for a given relative file path.
     
     :param relative_file_path: str, The relative file path to look up in the structure
-    :param structure: dict, The repository structure dictionary
     :return: dict, Information about the file's classes and functions, or None if not found
     """
+    structure = get_structure()
+    if not structure:
+        return "Error: Repository structure not initialized"
+        
     path_parts = relative_file_path.replace("\\", "/").split("/")  # Split into components
     current_level = structure
 
@@ -367,6 +380,7 @@ def get_relevant_files(problem_statement: str, repo_path: str = None) -> str:
     file1.py
     file2.py
     ```
+
     """
 
     repo_path = repo_path or os.getcwd()

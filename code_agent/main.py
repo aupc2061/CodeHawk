@@ -16,6 +16,7 @@ from code_agent.routing import (
 )
 from code_agent.tools import *
 from code_agent.structure import create_structure
+from code_agent.shared_context import set_structure
 from IPython.display import Image, display
 
 from code_agent.config import (
@@ -26,7 +27,7 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     sender: str
 
-def build_agent_graph(model: str = "claude", temperature: float = 0, structure: dict = None):
+def build_agent_graph(model: str = "claude", temperature: float = 0):
     """Build and return the agent graph with specified model"""
     
     # Initialize the LLM
@@ -165,26 +166,40 @@ def run_agent(
     # Use provided workspace dir or current directory
     workspace_dir = workspace_dir or os.getcwd()
     
-    # Create structure for the workspace directory
-    structure = create_structure(workspace_dir)
+    # Change current working directory to workspace directory
+    original_cwd = os.getcwd()
+    os.chdir(workspace_dir)
     
-    # Build graph with structure
-    graph = build_agent_graph(model, temperature, structure)
-    
-    # Initialize state
-    state = {
-        "messages": [HumanMessage(content=question)],
-        "sender": "user"
-    }
+    try:
+        # Create structure for the workspace directory
+        structure = create_structure(workspace_dir)
+        # Set the structure in shared context
+        set_structure(structure)
+        
+        # Build graph with structure
+        graph = build_agent_graph(model, temperature)
+        
+        # Initialize state
+        state = {
+            "messages": [HumanMessage(content=question)],
+            "sender": "user"
+        }
 
-    for step in graph.stream(state):
-        if log_file:
-            with open(log_file, 'a') as f:
-                f.write(f"{step}\n---\n")
-        for key, value in step.items():
-            if key in COLORS:  # Check if the key is in the color mapping
-                if isinstance(value, dict) and "messages" in value:
-                    for message in value["messages"]:
-                        if isinstance(message, AIMessage):
-                            content = message.content  # Extract only the message text
-                            console.print(f"\n[{key.upper()}]: {content}\n", style=COLORS[key])
+        for step in graph.stream(state):
+            if log_file:
+                with open(log_file, 'a') as f:
+                    f.write(f"{step}\n---\n")
+            for key, value in step.items():
+                # if key in COLORS:  # Check if the key is in the color mapping
+                #     if isinstance(value, dict) and "messages" in value:
+                #         for message in value["messages"]:
+                #             if isinstance(message, AIMessage):
+                #                 content = message.content  # Extract only the message text
+                #                 console.print(f"\n[{key.upper()}]: {content}\n", style=COLORS[key])
+                pprint.pprint(f"Output from node '{key}':")
+                pprint.pprint("---")
+                pprint.pprint(value, indent=2, width=80, depth=None)
+            pprint.pprint("\n---\n")
+    finally:
+        # Restore original working directory
+        os.chdir(original_cwd)
