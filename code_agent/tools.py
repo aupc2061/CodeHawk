@@ -4,7 +4,8 @@ from typing import Optional
 from langchain_core.tools import tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from typing import Dict, Optional
-
+from code_agent.config import GOOGLE_API_KEY, GROQ_API_KEY, ANTHROPIC_API_KEY
+from langchain_anthropic import ChatAnthropic
 @tool
 def get_class_info(relative_file_path: str, class_name: str, structure: Dict) -> Optional[str]:
     """Search for a class by name in the given relative file path and return its details."""
@@ -375,6 +376,10 @@ def get_relevant_files(problem_statement: str, repo_path: str = None) -> str:
     message = [
         ("human", prompt)
     ]
-    llm1 = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", temperature=0)
+    llm1 = ChatAnthropic(
+            model='claude-3-sonnet-20240229',
+            temperature=0,
+            api_key=ANTHROPIC_API_KEY
+        )
     response = llm1.invoke(input=message)
     return response.content
