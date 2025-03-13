@@ -143,7 +143,10 @@ COLORS = {
     "planner": "bold cyan",
     "code_editor": "bold green",
     "code_analysis": "bold magenta",
-    "HIL": "bold yellow"
+    "HIL": "bold yellow",
+    "planner_tool": "cyan",
+    "code_edit_tool": "green",
+    "code_analysis_tool": "magenta"
 }
 
 
