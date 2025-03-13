@@ -35,6 +35,7 @@ Do the following steps in the same order:
 4. Asking User Approval
    - When you've identified the necessary changes and wish to start editing to fix the issue, respond with "ASK USER".
    - Provide clear instructions to the user about what changes need to be made and why.
+   - Along with the instructions also generate the code you want to implement and ask the user if they want to proceed with the changes.
    - If the user responds with yes, then respond with "EDIT FILE" to start editing the file.
    - If the user responds with no, then respond with "ANALYZE CODE" to analyze the codebase further.
    
