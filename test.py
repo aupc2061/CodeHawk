@@ -43,7 +43,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run the GitHub Code Agent with a natural language request.")
     parser.add_argument("-q", "--question", type=str, help="The natural language request for the agent")
     parser.add_argument("-m", "--model", type=str, help="The model to use (Claude, Gemini, or LLaMA)")  
-    parser.add_argument("-w", "--workspace", type=str, help="The workspace directory to analyze (defaults to current working directory)", default=os.getcwd())
+    parser.add_argument("-w", "--workspace", type=str, help="The workspace directory to analyze (defaults to current working directory)")
 
     # Parse arguments
     args = parser.parse_args()
@@ -55,11 +55,13 @@ def main():
         args.question = Prompt.ask("[bold cyan]🔎 Enter your request[/]")
 
     # Workspace directory selection
-    if args.workspace == os.getcwd():
+    if not args.workspace:
         console.print("\n[bold yellow]📂 Workspace Directory:[/]")
         console.print("[bold white]Current working directory:[/] " + os.getcwd())
         if Prompt.ask("[bold cyan]Would you like to specify a different workspace directory?[/]", choices=["yes", "no"], default="no") == "yes":
-            args.workspace = Prompt.ask("[bold cyan]Enter the workspace directory path[/]")
+            args.workspace = Prompt.ask("[bold cyan]Enter the workspace directory path[/]", default=os.getcwd())
+        else:
+            args.workspace = os.getcwd()
 
     # Model selection with interactive table
     if not args.model:
@@ -79,7 +81,8 @@ def main():
     # Display confirmation
     console.print("\n[bold green]🚀 Running GitHub Code Agent...[/]")
     console.print(f"[bold yellow]📌 Request:[/] [bold white]{args.question}[/]")
-    console.print(f"[bold yellow]🤖 Model:[/] [bold white]{args.model}[/]\n")
+    console.print(f"[bold yellow]🤖 Model:[/] [bold white]{args.model}[/]")
+    console.print(f"[bold yellow]📂 Directory:[/] [bold white]{args.workspace}[/]\n")
 
     # Run the agent with provided input
     run_agent(question=args.question, model=args.model, temperature=0, workspace_dir=args.workspace)
