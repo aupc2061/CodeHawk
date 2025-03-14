@@ -181,7 +181,7 @@ def run_agent(
             "sender": "user"
         }
 
-         for step in graph.stream(state):
+        for step in graph.stream(state):
             if log_file:
                 with open(log_file, 'a') as f:
                     f.write(f"{step}\n---\n")
