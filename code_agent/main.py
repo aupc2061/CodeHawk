@@ -167,23 +167,15 @@ def run_agent(
         workspace_dir: Optional path to workspace directory. Defaults to current directory
     """
     
-    # Use provided workspace dir or current directory
     workspace_dir = workspace_dir or os.getcwd()
-    
-    # Change current working directory to workspace directory
     original_cwd = os.getcwd()
     os.chdir(workspace_dir)
     
     try:
-        # Create structure for the workspace directory
         structure = create_structure(workspace_dir)
-        # Set the structure in shared context
         set_structure(structure)
-        
-        # Build graph with structure
         graph = build_agent_graph(model, temperature)
         
-        # Initialize state
         state = {
             "messages": [HumanMessage(content=question)],
             "sender": "user"
@@ -195,19 +187,45 @@ def run_agent(
                     f.write(f"{step}\n---\n")
 
             for key, value in step.items():
-                if key in COLORS:  # Check if the key is in the color mapping
+                if key in COLORS:
                     if isinstance(value, dict) and "messages" in value:
                         for message in value["messages"]:
                             if isinstance(message, AIMessage):
-                                content = message.content  # Extract only the message text
-                                console.print(f"\n[{key.upper()}]: {content}\n", style=COLORS[key])
+                                # Handle different types of AI message content
+                                if isinstance(message.content, list):
+                                    # Handle structured content (list of dicts)
+                                    for item in message.content:
+                                        if isinstance(item, dict):
+                                            if 'text' in item:
+                                                console.print(f"\n[{key.upper()}]: {item['text']}\n", style=COLORS[key])
+                                            elif 'type' == 'tool_use':
+                                                tool_name = item.get('name', 'Unknown Tool')
+                                                console.print(f"\n[{key.upper()} - USING TOOL]: [bold]{tool_name}[/bold]\n", style=COLORS[key])
+                                else:
+                                    # Clean and format the content text
+                                    lines = message.content.split('\n')
+                                    action = next((line for line in lines if line in ["ANALYZE CODE", "ASK USER", "EDIT FILE", "PATCH COMPLETED", "FILE OPENED", "EDITING COMPLETED"]), None)
+                                    
+                                    if action:
+                                        console.print(f"\n[{key.upper()} - ACTION]: [bold]{action}[/bold]", style=COLORS[key])
+                                        content = '\n'.join(line for line in lines if line != action).strip()
+                                        if content:
+                                            console.print(f"\n{content}\n", style=COLORS[key])
+                                    else:
+                                        console.print(f"\n[{key.upper()}]: {message.content}\n", style=COLORS[key])
+                                        
                             elif isinstance(message, ToolMessage):
-                                tool_name = message.name  # Extract the tool name
-                                console.print(f"\n[{key.upper()} - TOOL USED]: [bold]{tool_name}[/bold]\n", style=COLORS[key])
-              #  pprint.pprint(f"Output from node '{key}':")
-              #  pprint.pprint("---")
-              #  pprint.pprint(value, indent=2, width=80, depth=None)
-        #    pprint.pprint("\n---\n")
+                                # Format tool responses nicely
+                                tool_name = message.name
+                                if message.content and message.content.strip() != 'null':
+                                    console.print(f"\n[{key.upper()} - TOOL RESULT]: [bold]{tool_name}[/bold]", style=COLORS[key])
+                                    # Clean up tool output
+                                    content = message.content.strip()
+                                    if content.startswith('```') and content.endswith('```'):
+                                        content = content[3:-3].strip()
+                                    console.print(content + "\n", style=COLORS[key])
+                                else:
+                                    console.print(f"\n[{key.upper()} - TOOL COMPLETED]: [bold]{tool_name}[/bold]\n", style=COLORS[key])
+
     finally:
-        # Restore original working directory
         os.chdir(original_cwd)
