@@ -6,6 +6,7 @@ tiktoken
 libcst
 llama-index
 jsonlines
+langchain
 langgraph>=0.0.15
 langchain-openai>=0.0.5
 langchain-anthropic>=0.1.1
