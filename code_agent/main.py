@@ -144,9 +144,9 @@ COLORS = {
     "code_editor": "bold green",
     "code_analysis": "bold magenta",
     "HIL": "bold yellow",
-    "planner_tool": "cyan",
-    "code_edit_tool": "green",
-    "code_analysis_tool": "magenta"
+    "planner_tool": "blue",
+    "code_edit_tool": "red",
+    "code_analysis_tool": "white"
 }
 
 
