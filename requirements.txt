@@ -1,5 +1,7 @@
 anthropic
 openai
+rich
+ipython
 pre-commit
 datasets
 tiktoken
