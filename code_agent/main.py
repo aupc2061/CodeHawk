@@ -47,7 +47,7 @@ def build_agent_graph(model: str = "claude", temperature: float = 0):
     # Create tool nodes with bound structure
     planner_tools = [get_repo_tree]  
     editor_tools = [get_repo_tree, list_files, open_file, edit_file, find_file, search_file, create_file, search_dir]
-    analysis_tools = [get_class_and_function_info, get_repo_tree, get_relevant_files, open_file, get_class_info, get_function_info,create_file]
+    analysis_tools = [get_class_and_function_info, get_repo_tree, get_relevant_files, open_file, get_class_info, get_function_info]
 
     planner_tool_node = ToolNode(planner_tools)
     editor_tool_node = ToolNode(editor_tools)
