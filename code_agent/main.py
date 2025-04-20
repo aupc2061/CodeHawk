@@ -18,6 +18,8 @@ from code_agent.tools import *
 from code_agent.structure import create_structure
 from code_agent.shared_context import set_structure
 from IPython.display import Image, display
+from langchain_core.runnables import RunnableConfig
+
 
 from code_agent.config import (
     PLANNER_PROMPT, EDITING_AGENT_PROMPT, CODE_ANALYZER_PROMPT
@@ -180,8 +182,8 @@ def run_agent(
             "messages": [HumanMessage(content=question+'repo_path={}'.format(workspace_dir))],
             "sender": "user"
         }
-
-        for step in graph.stream(state):
+        config=RunnableConfig(recursion_limit=100)
+        for step in graph.stream(state, config=config):
             if log_file:
                 with open(log_file, 'a') as f:
                     f.write(f"{step}\n---\n")
