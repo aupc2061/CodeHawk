@@ -142,4 +142,7 @@ Key dependencies include:
 3. Make your changes
 4. Submit a pull request
 
+## License
+
+This project is licensed under the MIT License.
 
